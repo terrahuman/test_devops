@@ -1,0 +1,41 @@
+---
+- name: Create a directory if it does not exist
+  ansible.builtin.file:
+    path  : "{{ python_tmp_dir }}"
+    state : directory
+    mode  : '0755'
+
+- name: Download archive Python-{{ python_version }}
+  ansible.builtin.shell:
+    "wget -P {{ python_tmp_dir }} -c https://www.python.org/ftp/python/{{ python_version }}/Python-{{ python_version }}.tgz"
+
+- name: Archive name
+  ansible.builtin.shell:
+    "ls {{ python_tmp_dir }}"
+  register: archive_name
+
+- name: Unzipping to the Python-{{ python_version }} directory
+  ansible.builtin.shell:
+    "tar -C {{ python_tmp_dir }} -zxf {{ python_tmp_dir }}{{ archive_name.stdout }}"
+
+- name: Configuration Python-{{ python_version }}
+  ansible.builtin.shell:
+    "cd {{ python_tmp_dir }}Python-{{ python_version }} && ./configure --prefix=/opt/python3 --enable-optimizations --silent"
+
+- name: Installation Python-{{ python_version }}
+  ansible.builtin.shell:
+    "cd {{ python_tmp_dir }}Python-{{ python_version }} && make --silent && make install"
+
+- name: Update Python-{{ python_version }} packages
+  ansible.builtin.shell:
+    "{{ python_install_dir }}/bin/pip3.9 install --upgrade pip"
+
+- name: Installation Python-{{ python_version }} packages
+  ansible.builtin.shell:
+    "{{ python_install_dir }}/bin/pip3.9 install pycurl mysqlclient mysql.connector certifi redis sentry-sdk"
+
+- name: Deleting a temporary directory
+  ansible.builtin.file:
+    path  : "{{ python_tmp_dir }}"
+    state : absent
+...

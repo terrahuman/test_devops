@@ -1,0 +1,21 @@
+---
+- name: Create a directory
+  ansible.builtin.file:
+    path  : "{{ item }}"
+    state : directory
+    owner : "{{ new_user }}"
+    group : "{{ new_user }}"
+    mode  : "0777"
+  loop:
+   - /etc/nginx/projects_conf
+   - /etc/nginx/projects
+   - /etc/nginx/projects/panels
+
+- name: Create a directory
+  ansible.builtin.file:
+    path  : /var/www/server/frontend/shared/runtime/GeoIP
+    state : directory
+    owner : "{{ new_user }}"
+    group : "{{ new_user }}"
+    mode  : "0777"
+...

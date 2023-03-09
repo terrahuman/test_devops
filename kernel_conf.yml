@@ -1,0 +1,41 @@
+---
+- name: Setting the Kernel сonfiguration
+  ansible.builtin.shell:
+    echo 'net.ipv4.ip_local_port_range = 1024 65535' > /etc/sysctl.conf || /bin/true
+
+- name: Setting the Kernel сonfiguration
+  ansible.builtin.shell:
+    echo 'fs.nr_open=2000000' >> /etc/sysctl.conf || /bin/true
+
+- name: Setting the Kernel сonfiguration
+  ansible.builtin.shell:
+    echo 'fs.file-max=5000000' >> /etc/sysctl.conf || /bin/true
+
+- name: Setting the Kernel сonfiguration
+  ansible.builtin.shell:
+    sysctl -p || /bin/true
+
+- name: Setting the Kernel сonfiguration
+  ansible.builtin.shell:
+    echo 'DefaultLimitNOFILE=6500535' >> /etc/systemd/system.conf || /bin/true
+
+- name: Setting the Kernel сonfiguration
+  ansible.builtin.shell:
+    systemctl daemon-reload || /bin/true
+
+- name: Setting limits.conf
+  ansible.builtin.shell:
+    echo 'root hard nofile 6500536' >> /etc/security/limits.conf || /bin/true
+
+- name: Setting limits.conf
+  ansible.builtin.shell:
+    echo 'root soft nofile 6500535' >> /etc/security/limits.conf || /bin/true
+
+- name: Setting limits.conf
+  ansible.builtin.shell:
+    echo '* soft nofile 40000000' >> /etc/security/limits.conf || /bin/true
+
+- name: Setting limits.conf
+  ansible.builtin.shell:
+    echo '* hard nofile 40000000' >> /etc/security/limits.conf || /bin/true
+...

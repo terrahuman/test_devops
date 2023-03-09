@@ -1,0 +1,21 @@
+---
+- name: Install logrotate
+  ansible.builtin.apt:
+    name         : logrotate
+    state        : latest
+    update_cache : true
+
+- name: Copy mysql config file
+  ansible.builtin.copy:
+    src   : "{{ logrotate_nginx_conf }}"
+    dest  : /etc/logrotate.d/nginx
+    owner : root
+    group : root
+    mode  : '0644'
+
+- name: Restart logrotate
+  ansible.builtin.service:
+    name    : logrotate
+    state   : restarted
+    enabled : true
+... 

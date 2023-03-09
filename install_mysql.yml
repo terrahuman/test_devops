@@ -1,0 +1,161 @@
+---
+- name: Install software
+  ansible.builtin.apt:
+    pkg:
+      - libaio1
+      - libncurses5
+      - libnuma1
+    state        : latest
+    update_cache : true
+
+- name: Create a symbolic link
+  ansible.builtin.file:
+    src   : /usr/lib/x86_64-linux-gnu/libncurses.so.5.9
+    dest  : /lib64/libtinfo.so.5
+    owner : root
+    group : root
+    state : link
+
+- name: Add group
+  ansible.builtin.group:
+    name   : mysql
+    system : true
+    state  : present
+
+- name: Add user mysql
+  ansible.builtin.user:
+    name        : mysql
+    group       : mysql
+    system      : true
+    state       : present
+    create_home : false
+    shell       : /bin/false
+  
+- name: Create a directory
+  ansible.builtin.file:
+    path  : "{{ mysql_install_dir }}"
+    state : directory
+    mode  : '0755'
+
+- name: Create a directory
+  ansible.builtin.file:
+    path  : "{{ mysql_tmp_dir }}"
+    state : directory
+    mode  : '0755'
+
+- name: Download archive mysql-5.7 {~600MB}
+  ansible.builtin.shell:
+    "wget -P {{ mysql_tmp_dir }} -c {{ mysql_download_link }}"
+
+- name: Check archive name
+  ansible.builtin.shell:
+    "ls {{ mysql_tmp_dir }} | grep mysql"
+  register: archive_name
+
+- name: Unzipping to the /opt/mysql-5.7 directory
+  ansible.builtin.shell:
+    "tar -C {{ mysql_install_dir }} -zxf {{ mysql_tmp_dir }}{{ archive_name.stdout }} --strip-components 1"
+
+- name: Create a symbolic link
+  ansible.builtin.file:
+    src   : "{{ mysql_install_dir }}bin/mysql"
+    dest  : /usr/local/bin/mysql-5.7
+    owner : root
+    group : root
+    state : link
+
+- name: Create a symbolic link
+  ansible.builtin.file:
+    src   : "{{ mysql_install_dir }}bin/mysqldump"
+    dest  : /usr/local/bin/mysqldump-5.7
+    owner : root
+    group : root
+    state : link
+
+- name: Create data directory
+  ansible.builtin.file:
+    path  : "{{ mysql_data_dir }}"
+    state : directory
+    owner : mysql
+    group : mysql
+    mode  : '0755'
+
+- name: Mysql-5.7 initialization
+  ansible.builtin.shell:
+    "{{ mysql_install_dir }}bin/mysqld --initialize-insecure --user=mysql
+    --basedir={{ mysql_install_dir }} --character-set-server=utf8mb4"
+
+- name: Replace config
+  ansible.builtin.replace:
+    path    : "{{ mysql_install_dir }}support-files/mysql.server"
+    after   : "# overwritten by settings in the MySQL configuration files."
+    before  : "datadir="
+    regexp  : "^(basedir=)$"
+    replace : "basedir={{ mysql_install_dir }}"
+
+- name: Replace config
+  ansible.builtin.replace:
+    path    : "{{ mysql_install_dir }}support-files/mysql.server"
+    after   : "basedir=/opt/mysql-5.7"
+    before  : "# Default value, in seconds, afterwhich the script should timeout waiting"
+    regexp  : "^(datadir=)$"
+    replace : "datadir={{ mysql_data_dir }}"
+
+- name: Copy init script
+  ansible.builtin.copy:
+    src        : "{{ mysql_install_dir }}support-files/mysql.server"
+    dest       : /etc/init.d/mysql-5.7
+    owner      : root
+    group      : root
+    mode       : '0755'
+    remote_src : true
+
+- name: Copy logrotate config file
+  ansible.builtin.copy:
+    src        : "{{ mysql_install_dir }}support-files/mysql-log-rotate"
+    dest       : /etc/logrotate.d/mysql-log-rotate
+    owner      : root
+    group      : root
+    mode       : '0644'
+    remote_src : true
+
+- name: Create a directory
+  ansible.builtin.file:
+    path  : "{{ mysql_dir }}"
+    state : directory
+    mode  : '0755'
+
+- name: Copy mysql config file
+  ansible.builtin.copy:
+    src        : "{{ mysql_conf_file }}"
+    dest       : "{{ mysql_dir }}my.cnf"
+    owner      : root
+    group      : root
+    remote_src : false
+
+- name: Recursively change ownership of a directory
+  ansible.builtin.file:
+    path    : "{{ mysql_install_dir }}"
+    state   : directory
+    recurse : true
+    owner   : mysql
+    group   : mysql
+
+- name: Setting autostart and restart
+  ansible.builtin.shell:
+    update-rc.d mysql-5.7 defaults && service mysql-5.7 restart
+
+- name: Setting reload
+  ansible.builtin.shell:
+    systemctl daemon-reload || /bin/true
+
+- name: Set MySQL root password
+  ansible.builtin.raw:
+      mysql-5.7 -u root -e 'UPDATE mysql.user SET authentication_string=PASSWORD("{{ mysql_root_pass_init }}"),
+      plugin="mysql_native_password" WHERE user="root" AND host="localhost";FLUSH PRIVILEGES;'
+
+- name: Deleting a temporary directory
+  ansible.builtin.file:
+    path  : "{{ mysql_tmp_dir }}"
+    state : absent
+...

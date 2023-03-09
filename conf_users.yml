@@ -1,0 +1,62 @@
+---
+- name: Remove the user 'debian'
+  ansible.builtin.user:
+    name   : debian
+    state  : absent
+    force  : true
+    remove : true
+
+- name: Sudo without password for wheel group
+  ansible.builtin.copy:
+    content: '%wheel ALL=(ALL:ALL) NOPASSWD:ALL'
+    dest: /etc/sudoers.d/wheel_nopasswd
+    mode: 0440
+    validate: /usr/sbin/visudo -csf %s
+
+- name: Add wheel group
+  ansible.builtin.group:
+    name   : wheel
+    system : true
+    state  : present
+
+- name: Add user group
+  ansible.builtin.group:
+    name  : "{{ new_user }}"
+    state : present
+    gid   : 190
+
+- name: Create new user and add to wheel group
+  ansible.builtin.user:
+    name        : "{{ new_user }}"
+    group       : "{{ new_user }}"
+    groups      : wheel
+    shell       : /bin/bash
+    state       : present
+    uid         : 190
+    append      : true
+    create_home : true
+
+- name: Add public keys to authorized_keys file
+  ansible.posix.authorized_key:
+    user  : "{{ new_user }}"
+    state : present
+    key   : "{{ lookup('file', '{{ item }}') }}"
+  with_fileglob :
+    - "{{ ssh_key_pub }}"
+
+- name: Copy dev_id_rsa.pub to server
+  ansible.builtin.copy:
+    src   : "{{ ssh_key_pub }}"
+    dest  : /home/{{new_user}}/.ssh/
+    owner : "{{ new_user }}"
+    group : "{{ new_user }}"
+    mode  : 0644
+
+- name: Copy dev_id_rsa to server
+  ansible.builtin.copy:
+    src   : "{{ ssh_key }}"
+    dest  : /home/{{new_user}}/.ssh/
+    owner : "{{ new_user }}"
+    group : "{{ new_user }}"
+    mode  : 0600
+...

@@ -1,0 +1,5 @@
+[test]
+linux5   ansible_host=192.168.100.131
+linux6   ansible_host=192.168.100.132
+linux7   ansible_host=192.168.100.141
+linux8   ansible_host=192.168.100.142

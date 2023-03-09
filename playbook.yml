@@ -1,0 +1,54 @@
+---
+- hosts  : all
+  become : true
+
+  tasks:
+
+  - name: Setting users
+    ansible.builtin.include_tasks:
+      file : conf_users.yml
+
+  - name: Update Timezone to UTC+0
+    ansible.builtin.copy:
+      content : 'Etc/GMT+0'
+      dest    : /etc/timezone
+      owner   : root
+      group   : root
+      mode    : 0644
+
+  - name: Reconfigure Timezone Data
+    ansible.builtin.shell:
+      dpkg-reconfigure -f noninteractive tzdata
+
+  - name: Install software
+    ansible.builtin.include_tasks:
+      file : install_software.yml
+
+  - name: Install Mysql 5.7 from source code
+    ansible.builtin.include_tasks:
+      file : install_mysql.yml
+
+  - name: Install Python-{{ python_version }} from source code
+    ansible.builtin.include_tasks:
+      file : install_python.yml
+
+  - name: Kernel configuration
+    ansible.builtin.include_tasks:
+      file : kernel_conf.yml
+
+  - name: Create directory
+    ansible.builtin.include_tasks:
+      file : create_directory.yml
+
+  - name: Setting rotation logs nginx
+    ansible.builtin.include_tasks:
+      file : rotation_logs.yml
+
+  - name: Deleting a temporary directory
+    ansible.builtin.file:
+      path  : /opt/tmp/
+      state : absent
+
+  - name: Reboot
+    ansible.builtin.reboot:
+...

@@ -1,0 +1,69 @@
+---
+- name: Only run "update_cache=yes" if the last one is more than 3600 seconds ago
+  ansible.builtin.apt:
+    update_cache     : true
+    force_apt_get    : true
+    cache_valid_time : 3600
+
+- name: Install Other software
+  ansible.builtin.apt:
+    pkg:
+      - libfreetype6
+      - libfreetype6-dev
+      - zlib1g
+      - zlib1g-dev
+      - libxml2
+      - libxml2-dev
+      - libxslt1-dev
+      - libxslt1.1
+      - gcc
+      - curl
+      - make
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - mc
+      - wget
+      - aptitude
+      - unzip
+      - htop
+      - nload
+      - libffi-dev
+      - libmariadbclient-dev-compat
+      - gnupg2
+      - pkg-config
+      - tcl
+      - git
+      - sendmail
+      - openssl
+      - python3-minimal
+      - python3.9-minimal
+      - python-setuptools
+      - screen
+      - ethtool
+      - openssl
+      - nodejs
+      - npm
+      - tar
+    state        : latest
+    update_cache : true
+
+- name: Install composer
+  ansible.builtin.apt:
+    name         : composer
+    state        : latest
+    update_cache : true
+
+- name: Install nginx
+  ansible.builtin.apt:
+    name         : nginx
+    state        : latest
+    update_cache : true
+
+- name: Copy Nginx configuration file
+  ansible.builtin.copy:
+    src   : "{{ nginx_conf_file }}"
+    dest  : /etc/nginx/nginx.conf
+    owner : root
+    group : root
+    mode  : 0644
+...
